@@ -22,10 +22,13 @@ DWORD getQueuedSendByteSize(HANDLE hSerial)
 	return dwOutQueSize;
 }
 
-VOID waitForSend(HANDLE hSerial){
-	while(1){
+VOID waitForSend(HANDLE hSerial)
+{
+	while (1)
+	{
 		Sleep(50);
-		if(getQueuedSendByteSize(hSerial)==0){
+		if (getQueuedSendByteSize(hSerial) == 0)
+		{
 			break;
 		}
 	}
@@ -64,7 +67,7 @@ DWORD seikaOpen(DWORD port)
 {
 	if (initialized)
 	{
-		return 0;
+		return SEIKA_INIT_SUCCESS;
 	}
 	hSerial = rs232c_CreateSerial(clbk, NULL);
 	_DCB dcb;
@@ -78,7 +81,7 @@ DWORD seikaOpen(DWORD port)
 	BOOL connected = rs232c_OpenSerial(hSerial, port, dcb);
 	if (!connected)
 	{
-		return 1;
+		return SEIKA_INIT_NOT_CONNECTED;
 	}
 	const char initMessage[] = "\xff\xff\x1c\x00";
 	DWORD dwSent = rs232c_WriteCommBlock(hSerial, initMessage, 3);
@@ -100,9 +103,16 @@ DWORD seikaOpen(DWORD port)
 		rs232c_CloseSerial(hSerial);
 		rs232c_DestroySerial(hSerial);
 		hSerial = NULL;
-		return 2;
+		return SEIKA_INIT_TIMEOUT;
 	}
 	receiveFromCOM(hSerial, 12, out);
+	if (strncmp(out, "seika3", 6) != 0)
+	{
+		char msg[128];
+		sprintf(msg, "%s is not supported.", out);
+		MessageBoxA(NULL, msg, "error", MB_OK);
+		return SEIKA_INIT_NOT_SUPPORTED;
+	}
 	deviceName = (char *)malloc(16);
 	memset(deviceName, 0, 16);
 	memcpy(deviceName, out, 12);
@@ -226,6 +236,7 @@ VOID seikaClose()
 	initialized = 0;
 }
 
-int WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved){
+int WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
+{
 	return true;
 }

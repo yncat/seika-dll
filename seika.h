@@ -5,6 +5,11 @@
 
 #define SEIKA_API __declspec(dllexport)
 
+#define SEIKA_INIT_SUCCESS 0
+#define SEIKA_INIT_NOT_CONNECTED 1
+#define SEIKA_INIT_TIMEOUT 2
+#define SEIKA_INIT_NOT_SUPPORTED 3
+
 #define SEIKA_KEY_LEFT_ENTER 1
 #define SEIKA_KEY_RIGHT_ENTER 2
 #define SEIKA_KEY_LEFT_SCROL 3
