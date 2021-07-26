@@ -113,8 +113,8 @@ DWORD seikaOpen(DWORD port)
 		MessageBoxA(NULL, msg, "error", MB_OK);
 		return SEIKA_INIT_NOT_SUPPORTED;
 	}
-	deviceName = (char *)malloc(16);
-	memset(deviceName, 0, 16);
+	deviceName = (char *)malloc(64);
+	memset(deviceName, 0, 64);
 	memcpy(deviceName, out, 12);
 	cells = 40;
 	lineHeader = (char *)malloc(16);
@@ -233,6 +233,12 @@ VOID seikaClose()
 	waitForSend(hSerial);
 	rs232c_CloseSerial(hSerial);
 	rs232c_DestroySerial(hSerial);
+	if(deviceName){
+		free(deviceName);
+	}
+	if(lineHeader){
+		free(lineHeader);
+	}
 	initialized = 0;
 }
 
