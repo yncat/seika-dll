@@ -3,7 +3,7 @@
 #ifndef __SEIKA__
 #define __SEIKA__
 
-#define SEIKA_API __declspec(dllexport)
+#define SEIKA_API extern "C" __declspec(dllexport)
 
 #define SEIKA_INIT_SUCCESS 0
 #define SEIKA_INIT_NOT_CONNECTED 1

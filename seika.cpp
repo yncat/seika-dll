@@ -170,6 +170,7 @@ DWORD seikaGetKey()
 	}
 	if (s != 24 && s != 2)
 	{
+		rs232c_FlushComm(hSerial);
 		return 0;
 	}
 
