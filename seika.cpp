@@ -1,59 +1,34 @@
 #include <windows.h>
 #include <stdio.h>
 #include <string.h>
-#include "SerialComm32.h"
 #include "seika.h"
 
 DWORD getQueuedByteSize(HANDLE hSerial)
 {
-	DWORD dwInQueSize = 0;
-	DWORD dwOutQueSize = 0;
-	DWORD dwModemStat = 0;
-	rs232c_GetCommStatus(hSerial, &dwInQueSize, &dwOutQueSize, &dwModemStat);
-	return dwInQueSize;
-}
-
-DWORD getQueuedSendByteSize(HANDLE hSerial)
-{
-	DWORD dwInQueSize = 0;
-	DWORD dwOutQueSize = 0;
-	DWORD dwModemStat = 0;
-	rs232c_GetCommStatus(hSerial, &dwInQueSize, &dwOutQueSize, &dwModemStat);
-	return dwOutQueSize;
+	DWORD errors;
+	COMSTAT stat;
+	ClearCommError(hSerial,&errors,&stat);
+	return stat.cbInQue;
 }
 
 VOID waitForSend(HANDLE hSerial)
 {
-	while (1)
-	{
-		Sleep(50);
-		if (getQueuedSendByteSize(hSerial) == 0)
-		{
-			break;
-		}
-	}
+	FlushFileBuffers(hSerial);
 }
 
 VOID receiveFromCOM(HANDLE hSerial, DWORD bytes, char *out)
 {
 	while (1)
 	{
-		DWORD dwInQueSize = 0;
-		DWORD dwOutQueSize = 0;
-		DWORD dwModemStat = 0;
-		rs232c_GetCommStatus(hSerial, &dwInQueSize, &dwOutQueSize, &dwModemStat);
-		if (dwInQueSize >= bytes)
+		if (getQueuedByteSize(hSerial) >= bytes)
 		{
 			break;
 		}
 		Sleep(10);
 	}
-	rs232c_ReadCommBlock(hSerial, out, bytes);
+	DWORD read;
+	ReadFile(hSerial,out,bytes,&read,NULL);
 	memset(out + bytes, 0, 1);
-}
-
-VOID CALLBACK clbk(UINT uEvent, WPARAM wParam, LPARAM lParam1, LPARAM lParam2, LPARAM lParam3)
-{
 }
 
 HANDLE hSerial;
@@ -69,22 +44,26 @@ DWORD seikaOpen(DWORD port)
 	{
 		return SEIKA_INIT_SUCCESS;
 	}
-	hSerial = rs232c_CreateSerial(clbk, NULL);
-	_DCB dcb;
-	dcb.DCBlength = sizeof(_DCB);
+	char portstr[64];
+	sprintf(portstr,"COM%d",port);
+	HANDLE hSerial = CreateFile(portstr, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH, NULL);
+	if(hSerial==INVALID_HANDLE_VALUE){
+		return SEIKA_INIT_NOT_CONNECTED;
+	}
+	
+	DCB dcb;
+	GetCommState(hSerial, &dcb);
 	dcb.BaudRate = 9600;
 	dcb.fBinary = 1;
 	dcb.fParity = 1;
 	dcb.ByteSize = 8;
 	dcb.Parity = ODDPARITY;
 	dcb.StopBits = ONESTOPBIT;
-	BOOL connected = rs232c_OpenSerial(hSerial, port, dcb);
-	if (!connected)
-	{
-		return SEIKA_INIT_NOT_CONNECTED;
-	}
-	const char initMessage[] = "\xff\xff\x1c\x00";
-	DWORD dwSent = rs232c_WriteCommBlock(hSerial, initMessage, 3);
+	SetCommState(hSerial, &dcb);
+	const char initMessage[] = "\xff\xff\x1c";
+	DWORD written;
+	WriteFile(hSerial,initMessage,3,&written,NULL);
+	FlushFileBuffers(hSerial);
 	char out[256];
 	memset(out, 0, 256);
 	BOOL ok = false;
@@ -100,8 +79,7 @@ DWORD seikaOpen(DWORD port)
 	}
 	if (!ok)
 	{
-		rs232c_CloseSerial(hSerial);
-		rs232c_DestroySerial(hSerial);
+		CloseHandle(hSerial);
 		hSerial = NULL;
 		return SEIKA_INIT_TIMEOUT;
 	}
@@ -158,7 +136,8 @@ VOID seikaDisplay(const char *inbuf, DWORD inbufSize)
 			idx2++;
 		}
 	}
-	rs232c_WriteCommBlock(hSerial, writebuf, 8 + (cells * 2));
+	DWORD written;
+	WriteFile(hSerial, writebuf, 8 + (cells * 2), &written, NULL);
 }
 
 DWORD seikaGetKey()
@@ -166,11 +145,6 @@ DWORD seikaGetKey()
 	DWORD s = getQueuedByteSize(hSerial);
 	if (s == 0)
 	{
-		return 0;
-	}
-	if (s != 24 && s != 2)
-	{
-		rs232c_FlushComm(hSerial);
 		return 0;
 	}
 
@@ -232,8 +206,8 @@ VOID seikaClose()
 	}
 	seikaDisplay(NULL, 0);
 	waitForSend(hSerial);
-	rs232c_CloseSerial(hSerial);
-	rs232c_DestroySerial(hSerial);
+	CloseHandle(hSerial);
+	hSerial=NULL;
 	if(deviceName){
 		free(deviceName);
 	}
