@@ -3,11 +3,22 @@
 #include <string.h>
 #include "seika.h"
 
+HANDLE hSerial;
+char *lineHeader;
+DWORD cells;
+char *deviceName;
+
+VOID closeSerial()
+{
+	CloseHandle(hSerial);
+	hSerial = NULL;
+}
+
 DWORD getQueuedByteSize(HANDLE hSerial)
 {
 	DWORD errors;
 	COMSTAT stat;
-	ClearCommError(hSerial,&errors,&stat);
+	ClearCommError(hSerial, &errors, &stat);
 	return stat.cbInQue;
 }
 
@@ -27,14 +38,9 @@ VOID receiveFromCOM(HANDLE hSerial, DWORD bytes, char *out)
 		Sleep(10);
 	}
 	DWORD read;
-	ReadFile(hSerial,out,bytes,&read,NULL);
+	ReadFile(hSerial, out, bytes, &read, NULL);
 	memset(out + bytes, 0, 1);
 }
-
-HANDLE hSerial;
-char *lineHeader;
-DWORD cells;
-char *deviceName;
 
 BOOL initialized = false;
 
@@ -45,12 +51,13 @@ DWORD seikaOpen(DWORD port)
 		return SEIKA_INIT_SUCCESS;
 	}
 	char portstr[64];
-	sprintf(portstr,"COM%d",port);
-	HANDLE hSerial = CreateFile(portstr, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH, NULL);
-	if(hSerial==INVALID_HANDLE_VALUE){
+	sprintf(portstr, "COM%d", port);
+	hSerial = CreateFile(portstr, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH, NULL);
+	if (hSerial == INVALID_HANDLE_VALUE)
+	{
 		return SEIKA_INIT_NOT_CONNECTED;
 	}
-	
+
 	DCB dcb;
 	GetCommState(hSerial, &dcb);
 	dcb.BaudRate = 9600;
@@ -62,7 +69,7 @@ DWORD seikaOpen(DWORD port)
 	SetCommState(hSerial, &dcb);
 	const char initMessage[] = "\xff\xff\x1c";
 	DWORD written;
-	WriteFile(hSerial,initMessage,3,&written,NULL);
+	WriteFile(hSerial, initMessage, 3, &written, NULL);
 	FlushFileBuffers(hSerial);
 	char out[256];
 	memset(out, 0, 256);
@@ -79,8 +86,7 @@ DWORD seikaOpen(DWORD port)
 	}
 	if (!ok)
 	{
-		CloseHandle(hSerial);
-		hSerial = NULL;
+		closeSerial();
 		return SEIKA_INIT_TIMEOUT;
 	}
 	receiveFromCOM(hSerial, 12, out);
@@ -137,7 +143,11 @@ VOID seikaDisplay(const char *inbuf, DWORD inbufSize)
 		}
 	}
 	DWORD written;
-	WriteFile(hSerial, writebuf, 8 + (cells * 2), &written, NULL);
+	BOOL ret = WriteFile(hSerial, writebuf, 8 + (cells * 2), &written, NULL);
+	if (!ret)
+	{
+		printf("last error: %d\n", GetLastError());
+	}
 }
 
 DWORD seikaGetKey()
@@ -206,12 +216,13 @@ VOID seikaClose()
 	}
 	seikaDisplay(NULL, 0);
 	waitForSend(hSerial);
-	CloseHandle(hSerial);
-	hSerial=NULL;
-	if(deviceName){
+	closeSerial();
+	if (deviceName)
+	{
 		free(deviceName);
 	}
-	if(lineHeader){
+	if (lineHeader)
+	{
 		free(lineHeader);
 	}
 	initialized = 0;
