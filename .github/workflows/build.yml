@@ -16,7 +16,8 @@ jobs:
           - amd64_x86
     steps:
       - uses: actions/checkout@v2
-      - uses: ilammy/msvc-dev-cmd@v1
+      - name: prepare msvc
+        uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: ${{ matrix.arch }}
       - name: build programs
@@ -24,7 +25,8 @@ jobs:
         env:
           ARCH_NAME: _${{ matrix.arch }}
 
-      - uses: actions/upload-artifact@v2
+      - name: upload artifacts
+        uses: actions/upload-artifact@v2
         with:
           name: seika-dll-binaries-${{ matrix.arch }}
           path: |
