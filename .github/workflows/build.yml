@@ -37,7 +37,8 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/download-artifact@v2
 
-      - uses: ncipollo/release-action@v1
+      - name: publish automatic release
+        uses: ncipollo/release-action@v1
         if: startsWith(github.ref, 'refs/tags/v')
         with:
           artifacts: "seika-dll-binaries-amd64/*,seika-dll-binaries-amd64_x86/*"
