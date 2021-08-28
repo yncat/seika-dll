@@ -21,3 +21,9 @@ jobs:
           arch: ${{ matrix.arch }}
       - name: build programs
         run: nmake
+
+      - uses: actions/upload-artifact@v2
+      with:
+        path: |
+          *.dll
+          *.exe
