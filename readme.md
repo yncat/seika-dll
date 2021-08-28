@@ -15,7 +15,6 @@ Since it's currently focused on my own usecase and I have only one seika device,
 - number of cells is hardcoded to 40!!!!!!!!!!!!!!!
 - I don't know button names for seika at all, so button name enum isn't good.
 - The original implementation had included seika80 identification, but I did not implement it since I was not able to test.
-- Currently using a third-party library for serial IO (https://www.vector.co.jp/download/file/winnt/util/fh539143.html). It's better to use Windows native API for this, but I just cut a coner.
 
 ## Download
 
