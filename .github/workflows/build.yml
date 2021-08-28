@@ -16,8 +16,32 @@ jobs:
           - amd64_x86
     steps:
       - uses: actions/checkout@v2
-      - uses: ilammy/msvc-dev-cmd@v1
+      - name: prepare msvc
+        uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: ${{ matrix.arch }}
       - name: build programs
         run: nmake
+        env:
+          ARCH_NAME: _${{ matrix.arch }}
+
+      - name: upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: seika-dll-binaries-${{ matrix.arch }}
+          path: |
+            *.dll
+            *.exe
+            seika.h
+            readme.md
+
+      - name: fetch artifacts for release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/download-artifact@v2
+
+      - name: publish automatic release
+        uses: ncipollo/release-action@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          artifacts: "seika-dll-binaries-amd64/*,seika-dll-binaries-amd64_x86/*"
+          token: ${{ secrets.GITHUB_TOKEN }}
