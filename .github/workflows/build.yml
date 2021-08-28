@@ -21,10 +21,12 @@ jobs:
           arch: ${{ matrix.arch }}
       - name: build programs
         run: nmake
+        env:
+          ARCH_NAME: _${{ matrix.arch }}
 
       - uses: actions/upload-artifact@v2
         with:
-          name: seika-dll-binaries
+          name: seika-dll-binaries-${{ matrix.arch }}
           path: |
             *.dll
             *.exe
