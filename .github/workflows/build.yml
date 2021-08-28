@@ -36,13 +36,21 @@ jobs:
             seika.h
             readme.md
 
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
       - name: fetch artifacts for release
-        if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/download-artifact@v2
+
+      - name: make zip
+        run: |
+          zip -r seika-dll-binaries-amd64.zip seika-dll-binaries-amd64
+          zip -r seika-dll-binaries-amd64_x86.zip seika-dll-binaries-amd64_x86
 
       - name: publish automatic release
         uses: ncipollo/release-action@v1
-        if: startsWith(github.ref, 'refs/tags/v')
         with:
-          artifacts: "seika-dll-binaries-amd64/*,seika-dll-binaries-amd64_x86/*"
+          artifacts: "seika-dll-binaries-amd64.zip,seika-dll-binaries-amd64_x86.zip"
           token: ${{ secrets.GITHUB_TOKEN }}
