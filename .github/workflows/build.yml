@@ -24,6 +24,7 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
+          name: seika-dll-binaries
           path: |
             *.dll
             *.exe
