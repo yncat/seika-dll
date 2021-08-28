@@ -23,7 +23,7 @@ jobs:
         run: nmake
 
       - uses: actions/upload-artifact@v2
-      with:
-        path: |
-          *.dll
-          *.exe
+        with:
+          path: |
+            *.dll
+            *.exe
