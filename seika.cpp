@@ -22,11 +22,6 @@ DWORD getQueuedByteSize(HANDLE hSerial)
 	return stat.cbInQue;
 }
 
-VOID waitForSend(HANDLE hSerial)
-{
-	FlushFileBuffers(hSerial);
-}
-
 VOID receiveFromCOM(HANDLE hSerial, DWORD bytes, char *out)
 {
 	while (1)
@@ -70,7 +65,6 @@ DWORD seikaOpen(DWORD port)
 	const char initMessage[] = "\xff\xff\x1c";
 	DWORD written;
 	WriteFile(hSerial, initMessage, 3, &written, NULL);
-	FlushFileBuffers(hSerial);
 	char out[256];
 	memset(out, 0, 256);
 	BOOL ok = false;
@@ -143,11 +137,7 @@ VOID seikaDisplay(const char *inbuf, DWORD inbufSize)
 		}
 	}
 	DWORD written;
-	BOOL ret = WriteFile(hSerial, writebuf, 8 + (cells * 2), &written, NULL);
-	if (!ret)
-	{
-		printf("last error: %d\n", GetLastError());
-	}
+	WriteFile(hSerial, writebuf, 8 + (cells * 2), &written, NULL);
 }
 
 DWORD seikaGetKey()
@@ -215,7 +205,6 @@ VOID seikaClose()
 		return;
 	}
 	seikaDisplay(NULL, 0);
-	waitForSend(hSerial);
 	closeSerial();
 	if (deviceName)
 	{
