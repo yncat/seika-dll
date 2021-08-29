@@ -49,8 +49,16 @@ jobs:
           zip -r seika-dll-binaries-amd64.zip seika-dll-binaries-amd64
           zip -r seika-dll-binaries-amd64_x86.zip seika-dll-binaries-amd64_x86
 
+      - name: generate changelog
+        run: |
+          PREVIOUS_TAG=$(git tag --sort=-creatordate | sed -n 2p)
+          echo "PREVIOUS_TAG: $PREVIOUS_TAG"
+          git log --oneline --pretty=tformat:"%h %s" $PREVIOUS_TAG..${{ github.ref }} >changelog.md
+          echo "Generated changelog."
+
       - name: publish automatic release
         uses: ncipollo/release-action@v1
         with:
           artifacts: "seika-dll-binaries-amd64.zip,seika-dll-binaries-amd64_x86.zip"
           token: ${{ secrets.GITHUB_TOKEN }}
+          bodyFile: "changelog.txt"
