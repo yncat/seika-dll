@@ -62,4 +62,4 @@ jobs:
         with:
           artifacts: "seika-dll-binaries-amd64.zip,seika-dll-binaries-amd64_x86.zip"
           token: ${{ secrets.GITHUB_TOKEN }}
-          bodyFile: "changelog.txt"
+          bodyFile: "changelog.md"
